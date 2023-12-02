@@ -20,7 +20,7 @@ jobs:
       - run:
           name: Download /e/os manifest
           no_output_timeout: 2h
-          command: repo init -u https://gitlab.e.foundation/e/os/android.git -b v1-t --git-lfs
+          command: repo init -u https://gitlab.e.foundation/e/os/android.git -b v1-t
 
 
       - run:
