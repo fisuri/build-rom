@@ -15,7 +15,8 @@ jobs:
 
       - run: 
           name: Identy
-          command: git config --global user.name "fisuri" && git config user.email "fisuri@murena.io"
+          command: git config --global user.name "fisuri" \
+                   git config user.email "fisuri@murena.io"
 
       - run:
           name: Download /e/os manifest
