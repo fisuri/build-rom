@@ -1,0 +1,64 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/configuration-reference
+version: 2.1
+
+jobs:
+  build:
+    machine:
+      image: ubuntu-2204:current
+      resource_class: large
+
+    steps:
+      - run:
+          name: Install the AOSP build dependencies
+          command: sudo apt-get install git-core gnupg flex bison build-essential zip curl zlib1g-dev libc6-dev-i386 libncurses5 x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig -y
+
+      - run: 
+          name: Install Repo
+          command: curl -o /tmp/repo https://storage.googleapis.com/git-repo-downloads/repo && sudo install -m 755 ${REPO} /tmp/repo
+
+      - run:
+          name: Download /e/os manifest
+          no_output_timeout: 2h
+          command: repo init -u https://gitlab.e.foundation/e/os/android.git -b v1-t --git-lfs
+
+
+      - run:
+          name: Sync it
+          no_output_timeout: 24h
+          command: repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --depth=1 -c
+
+      - run:
+          name: Optimize Disk
+          command: rm -rfv .repo
+
+      - run:
+          name: Pull vayu-eos source
+          command: git clone https://gitlab.com/vayu-eos/device_xiaomi_vayu.git -b t-eos device/xiaomi/vayu --depth=1 \
+                   git clone https://github.com/LineageOS/android_kernel_xiaomi_vayu.git -b lineage-20 kernel/xiaomi/vayu --depth=1 \
+                   git clone https://gitlab.com/vayu-eos/vendor_xiaomi_vayu.git -b t vendor/xiaomi/vayu --depth=1
+
+      - run:
+          name: Set up the /e/os build environment
+          command: source build/envsetup.sh
+
+      - run:
+          name: Lunch target device
+          no_output_timeout: 2h
+          command: lunch lineage_vayu-userdebug
+
+      - run:
+          name: Build /e/os
+          no_output_timeout: 7h
+          command: mka bacon -j$(nproc --all)
+
+      - store_artifacts:
+          path: out/target/product/vayu/e-1.18-t-20231202351092-UNOFFICIAL-vayu.zip
+
+      - store_artifacts:
+          path: out/target/product/vayu/e-1.18-t-20231202351092-UNOFFICIAL-vayu.zipsha256sum
+
+workflows:
+  build_and_test:
+    jobs:
+      - build
